@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { PencilSquareIcon } from "@heroicons/react/24/solid";
 import TextInput from "@/Components/TextInput";
 import ConversationItem from "@/Components/App/ConversationItem";
+import { useEventBus } from '@/EventBus';
 
 
 
@@ -14,6 +15,7 @@ const ChatLayout = ({ children}) => {
     const [localConversations, setLocalConversations] = useState([]);
     const [sortedConversations, setSortedConversations] = useState([]);
     const [onlineUsers, setOnlineUsers] = useState({});
+    const {on} = useEventBus();
 
     const isUserOnline = (userId) => !!onlineUsers[userId];
 
@@ -29,6 +31,44 @@ const ChatLayout = ({ children}) => {
         
             })
         );
+    };
+
+    useEffect(() => {
+        const offCreated = on("message.created", messageCreated);
+
+        return () => {
+            offCreated();
+        };
+    }, [on]);
+
+    const messageCreated = (message) => {
+        setLocalConversations((oldUsers) => {
+            return oldUsers.map((u) => {
+                // If the message is for user
+                if (
+                    message.receiver_id &&
+                    !u.is_group &&
+                    (u.id == message.sender_id || u.id == message.receiver_id)
+                ) {
+                    u.last_message = message.message;
+                    u.last_message_date = message.created_at;
+                    return u;
+                }
+
+                // If the message is for group
+                if (
+                    message.group_id &&
+                    u.is_group &&
+                    u.id == message.group_id
+                ) {
+                    u.last_message = message.message;
+                    u.last_message_date = message.created_at;
+                    return u;
+                }
+
+                return u;
+            });
+        });
     };
 
     useEffect(() => {

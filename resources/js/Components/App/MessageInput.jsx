@@ -17,6 +17,10 @@ const MessageInput = ({ conversation = null }) => {
 
     //implement sending messages, proveri da li je prazan ako ne add data to message
     const onSendClick = () => {
+        if(messageSending){
+            return;
+        }
+        
         if (newMessage.trim() === "") {
             setInputErrorMessage("Please provide a message or upload attachments.");
 
@@ -90,10 +94,11 @@ const MessageInput = ({ conversation = null }) => {
                         onSend={onSendClick}
                         onChange={(ev) => setNewMessage(ev.target.value)}
                     />
-                    <button onClick={onSendClick} className="btn btn-info rounded-l-none">
-                        {messageSending && (
-                            <span className="loading loading-spinner loading-xs"></span>
-                        )}
+
+                    <button onClick={onSendClick} 
+                    disabled = {messageSending}
+                    className="btn btn-info rounded-l-none">
+                        
 
                         <PaperAirplaneIcon className="w-6" />
                         <span className="hidden sm:inline">Send</span>
