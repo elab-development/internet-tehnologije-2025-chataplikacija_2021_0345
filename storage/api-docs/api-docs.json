@@ -145,6 +145,95 @@
                 }
             }
         },
+        "/group/{group}/members/{user}": {
+            "put": {
+                "tags": [
+                    "Groups"
+                ],
+                "summary": "Postavi ili skini grupnog admina — samo vlasnik grupe sme",
+                "operationId": "e6411355bd3df02430f176e830c53945",
+                "parameters": [
+                    {
+                        "name": "group",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "user",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "is_admin"
+                                ],
+                                "properties": {
+                                    "is_admin": {
+                                        "type": "boolean"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Status grupnog admina promenjen"
+                    },
+                    "403": {
+                        "description": "Nisi vlasnik ove grupe"
+                    },
+                    "422": {
+                        "description": "Ne može se ciljati vlasnik"
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "Groups"
+                ],
+                "summary": "Ukloni člana iz grupe — vlasnik (bilo koga) ili grupni admin (samo obične članove)",
+                "operationId": "76e1575b57e3906928d24bc536354a86",
+                "parameters": [
+                    {
+                        "name": "group",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "user",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Član uklonjen, vraća se ažurirana grupa"
+                    },
+                    "403": {
+                        "description": "Nemaš dozvolu da ukloniš ovog člana"
+                    }
+                }
+            }
+        },
         "/message/older/{message}": {
             "get": {
                 "tags": [
@@ -259,6 +348,86 @@
                 "responses": {
                     "200": {
                         "description": "Lista korisnika"
+                    }
+                }
+            }
+        },
+        "/user/{user}/block-unblock": {
+            "post": {
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Blokiraj ili odblokiraj korisnika (moderator ili admin)",
+                "operationId": "1449b857682a209832f1698648e04e36",
+                "parameters": [
+                    {
+                        "name": "user",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Status blokiranosti promenjen"
+                    },
+                    "403": {
+                        "description": "Nemaš dozvolu za ovu akciju"
+                    }
+                }
+            }
+        },
+        "/user/{user}/change-role": {
+            "post": {
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Promeni ulogu korisnika (samo admin)",
+                "operationId": "05bae1a69f4a8928361ff8f88c0025d0",
+                "parameters": [
+                    {
+                        "name": "user",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "role"
+                                ],
+                                "properties": {
+                                    "role": {
+                                        "type": "string",
+                                        "enum": [
+                                            "user",
+                                            "moderator",
+                                            "admin"
+                                        ]
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Uloga promenjena"
+                    },
+                    "403": {
+                        "description": "Nemaš dozvolu za ovu akciju"
+                    },
+                    "422": {
+                        "description": "Nepoznata uloga"
                     }
                 }
             }

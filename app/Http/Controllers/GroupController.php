@@ -3,10 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Events\GroupDeleted;
+use App\Events\GroupMemberRemoved;
 use App\Http\Requests\StoreGroupRequest;
 use App\Http\Requests\UpdateGroupRequest;
 use App\Models\Group;
 use App\Models\Message;
+use App\Models\User;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use OpenApi\Attributes as OA;
 
@@ -137,5 +140,83 @@ class GroupController extends Controller
         GroupDeleted::dispatch($groupId);
 
         return response('', 204);
+    }
+
+    #[OA\Put(
+        path: '/group/{group}/members/{user}',
+        summary: 'Postavi ili skini grupnog admina — samo vlasnik grupe sme',
+        tags: ['Groups'],
+        parameters: [
+            new OA\Parameter(name: 'group', in: 'path', required: true, schema: new OA\Schema(type: 'integer')),
+            new OA\Parameter(name: 'user', in: 'path', required: true, schema: new OA\Schema(type: 'integer')),
+        ],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                required: ['is_admin'],
+                properties: [new OA\Property(property: 'is_admin', type: 'boolean')]
+            )
+        ),
+        responses: [
+            new OA\Response(response: 200, description: 'Status grupnog admina promenjen'),
+            new OA\Response(response: 403, description: 'Nisi vlasnik ove grupe'),
+            new OA\Response(response: 422, description: 'Ne može se ciljati vlasnik'),
+        ]
+    )]
+    public function updateMember(Request $request, Group $group, User $user)
+    {
+        if ($group->owner_id !== auth()->id()) {
+            return response()->json(['message' => 'Forbidden'], 403);
+        }
+
+        if ($user->id === $group->owner_id) {
+            return response()->json(['message' => 'Owner is already in charge of the group'], 422);
+        }
+
+        $data = $request->validate(['is_admin' => 'required|boolean']);
+
+        $group->users()->updateExistingPivot($user->id, ['is_admin' => $data['is_admin']]);
+
+        return response()->json($group->fresh()->toConversationArray());
+    }
+
+    #[OA\Delete(
+        path: '/group/{group}/members/{user}',
+        summary: 'Ukloni člana iz grupe — vlasnik (bilo koga) ili grupni admin (samo obične članove)',
+        tags: ['Groups'],
+        parameters: [
+            new OA\Parameter(name: 'group', in: 'path', required: true, schema: new OA\Schema(type: 'integer')),
+            new OA\Parameter(name: 'user', in: 'path', required: true, schema: new OA\Schema(type: 'integer')),
+        ],
+        responses: [
+            new OA\Response(response: 200, description: 'Član uklonjen, vraća se ažurirana grupa'),
+            new OA\Response(response: 403, description: 'Nemaš dozvolu da ukloniš ovog člana'),
+        ]
+    )]
+    public function removeMember(Group $group, User $user)
+    {
+        $currentUser = auth()->user();
+        $isOwner = $group->owner_id === $currentUser->id;
+
+        if ($user->id === $group->owner_id) {
+            return response()->json(['message' => 'Cannot remove the owner from the group'], 403);
+        }
+
+        if (!$isOwner) {
+            $targetIsGroupAdmin = $group->users()
+                ->wherePivot('user_id', $user->id)
+                ->wherePivot('is_admin', true)
+                ->exists();
+
+            if (!$group->isOwnerOrGroupAdmin($currentUser) || $targetIsGroupAdmin) {
+                return response()->json(['message' => 'Forbidden'], 403);
+            }
+        }
+
+        $group->users()->detach($user->id);
+
+        GroupMemberRemoved::dispatch($group->id, $user->id);
+
+        return response()->json($group->fresh()->toConversationArray());
     }
 }

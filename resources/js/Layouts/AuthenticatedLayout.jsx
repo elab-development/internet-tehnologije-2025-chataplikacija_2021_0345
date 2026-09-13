@@ -87,6 +87,12 @@ export default function AuthenticatedLayout({ header, children }) {
                 })
                 .listen("GroupDeleted", (e) => {
                     emit("group.deleted", { id: e.id });
+                })
+                .listen("GroupMemberRemoved", (e) => {
+                    emit("group.member.removed", {
+                        groupId: e.group_id,
+                        userId: e.user_id,
+                    });
                 });
         });
 

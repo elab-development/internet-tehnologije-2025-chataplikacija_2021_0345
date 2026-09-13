@@ -1,27 +1,34 @@
 //headless ui drowpdown copy
 import { Menu, Transition } from "@headlessui/react";
 import { Fragment } from "react";
+import { usePage } from "@inertiajs/react";
 
 import {
+    CheckIcon,
     EllipsisVerticalIcon,
     LockClosedIcon,
     LockOpenIcon,
-    ShieldCheckIcon,
-    UserIcon,
 } from "@heroicons/react/24/solid";
 import { useToast } from "@/ToastContext";
 
+const ROLES = [
+    { value: "user", label: "User" },
+    { value: "moderator", label: "Moderator" },
+    { value: "admin", label: "Admin" },
+];
 
 export default function UserOptionsDropdown({ conversation }) {
     const toast = useToast();
+    const currentUser = usePage().props.auth.user;
+    const canChangeRole = currentUser.role === "admin";
 
-    const changeUserRole = () => {
-        if (!conversation.is_user) {
+    const changeUserRole = (role) => {
+        if (!conversation.is_user || role === conversation.role) {
             return;
         }
 
         axios
-            .post(route("user.changeRole", conversation.id))
+            .post(route("user.changeRole", conversation.id), { role })
             .then((res) => {
                 toast.success(res.data?.message || "Role updated successfully");
             })
@@ -47,10 +54,6 @@ export default function UserOptionsDropdown({ conversation }) {
                 toast.error(err?.response?.data?.message || "Something went wrong");
             });
     };
-
-    
-
-
 
     return (
         <div>
@@ -100,34 +103,33 @@ export default function UserOptionsDropdown({ conversation }) {
                                 )}
                             </Menu.Item>
                         </div>
-                        <div className="px-1 py-1">
-                            <Menu.Item>
-                                {({ active }) => (
-                                    <button
-                                        onClick={changeUserRole}
-                                        className={`${
-                                            active
-                                                ? "bg-black/30 text-white"
-                                                : "text-gray-100"
-                                        } group flex w-full items-center rounded-md px-2 py-2 text-sm`}
-                                    >
-                                        {conversation.is_admin && (
-                                            <>
-                                                <UserIcon className="w-4 h-4 mr-2" />
-                                                Make Regular User
-                                            </>
-                                        )}
 
-                                        {!conversation.is_admin && (
-                                            <>
-                                                <ShieldCheckIcon className="w-4 h-4 mr-2" />
-                                                Make Admin
-                                            </>
+                        {canChangeRole && (
+                            <div className="px-1 py-1">
+                                <div className="px-2 pt-1 pb-1 text-xs uppercase text-gray-500">
+                                    Role
+                                </div>
+                                {ROLES.map((role) => (
+                                    <Menu.Item key={role.value}>
+                                        {({ active }) => (
+                                            <button
+                                                onClick={() => changeUserRole(role.value)}
+                                                className={`${
+                                                    active
+                                                        ? "bg-black/30 text-white"
+                                                        : "text-gray-100"
+                                                } group flex w-full items-center justify-between rounded-md px-2 py-2 text-sm`}
+                                            >
+                                                {role.label}
+                                                {conversation.role === role.value && (
+                                                    <CheckIcon className="w-4 h-4" />
+                                                )}
+                                            </button>
                                         )}
-                                    </button>
-                                )}
-                            </Menu.Item>
-                        </div>
+                                    </Menu.Item>
+                                ))}
+                            </div>
+                        )}
                     </Menu.Items>
                 </Transition>
             </Menu>
