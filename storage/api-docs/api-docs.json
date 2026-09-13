@@ -1,0 +1,281 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "ChatApp API",
+        "description": "API dokumentacija za chat aplikaciju: slanje/brisanje poruka sa prilozima, upravljanje grupama i lista korisnika. Rute su zaštićene sesijom (login preko browsera), ne API tokenom.",
+        "version": "1.0.0"
+    },
+    "servers": [
+        {
+            "url": "/",
+            "description": "Aktivni server"
+        }
+    ],
+    "paths": {
+        "/group": {
+            "post": {
+                "tags": [
+                    "Groups"
+                ],
+                "summary": "Napravi novu grupu",
+                "operationId": "e4177fdb8c798f4607f383faade958a2",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "name",
+                                    "user_ids"
+                                ],
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "example": "Ekipa"
+                                    },
+                                    "description": {
+                                        "type": "string",
+                                        "nullable": true
+                                    },
+                                    "user_ids": {
+                                        "description": "ID-jevi ostalih članova (vlasnik se automatski dodaje)",
+                                        "type": "array",
+                                        "items": {
+                                            "type": "integer"
+                                        }
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Grupa napravljena, vraća se kao conversation objekat"
+                    },
+                    "422": {
+                        "description": "Validacija nije prošla"
+                    }
+                }
+            }
+        },
+        "/group/{group}": {
+            "put": {
+                "tags": [
+                    "Groups"
+                ],
+                "summary": "Izmeni grupu (naziv, opis, članovi) — samo vlasnik sme",
+                "operationId": "ee6519e8aa4bae14ebd529163c79b2e5",
+                "parameters": [
+                    {
+                        "name": "group",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "name",
+                                    "user_ids"
+                                ],
+                                "properties": {
+                                    "name": {
+                                        "type": "string"
+                                    },
+                                    "description": {
+                                        "type": "string",
+                                        "nullable": true
+                                    },
+                                    "user_ids": {
+                                        "description": "Kompletna nova lista članova (zamenjuje staru, vlasnik ostaje uvek)",
+                                        "type": "array",
+                                        "items": {
+                                            "type": "integer"
+                                        }
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Grupa izmenjena, vraća se kao conversation objekat"
+                    },
+                    "403": {
+                        "description": "Nisi vlasnik ove grupe"
+                    },
+                    "422": {
+                        "description": "Validacija nije prošla"
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "Groups"
+                ],
+                "summary": "Obriši grupu, uključno sa svim njenim porukama i prilozima — samo vlasnik sme",
+                "operationId": "6362c2a11b7c54e9add93912c0bff496",
+                "parameters": [
+                    {
+                        "name": "group",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Grupa obrisana"
+                    },
+                    "403": {
+                        "description": "Nisi vlasnik ove grupe"
+                    }
+                }
+            }
+        },
+        "/message/older/{message}": {
+            "get": {
+                "tags": [
+                    "Messages"
+                ],
+                "summary": "Učitaj starije poruke od date poruke (beskonačan skrol)",
+                "operationId": "85a97e40e0739fbfd5385f93509daf79",
+                "parameters": [
+                    {
+                        "name": "message",
+                        "in": "path",
+                        "description": "ID najstarije trenutno učitane poruke",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Lista starijih poruka (paginirano, 10 po stranici)"
+                    }
+                }
+            }
+        },
+        "/message": {
+            "post": {
+                "tags": [
+                    "Messages"
+                ],
+                "summary": "Pošalji poruku (tekst i/ili prilozi) korisniku ili grupi",
+                "operationId": "4e961d642a18fd06833905d239832891",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "properties": {
+                                    "message": {
+                                        "type": "string",
+                                        "example": "Ćao!",
+                                        "nullable": true
+                                    },
+                                    "receiver_id": {
+                                        "description": "Obavezno ako group_id nije poslat",
+                                        "type": "integer",
+                                        "nullable": true
+                                    },
+                                    "group_id": {
+                                        "description": "Obavezno ako receiver_id nije poslat",
+                                        "type": "integer",
+                                        "nullable": true
+                                    },
+                                    "attachments": {
+                                        "description": "Do 10 fajlova, max 100MB po fajlu",
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string",
+                                            "format": "binary"
+                                        }
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Poruka sačuvana"
+                    },
+                    "422": {
+                        "description": "Validacija nije prošla"
+                    }
+                }
+            }
+        },
+        "/message/{message}": {
+            "delete": {
+                "tags": [
+                    "Messages"
+                ],
+                "summary": "Obriši poruku (samo vlasnik poruke sme)",
+                "operationId": "c8288ebe0c8ae22fbb25886f41b5950c",
+                "parameters": [
+                    {
+                        "name": "message",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Poruka obrisana"
+                    },
+                    "403": {
+                        "description": "Nisi vlasnik ove poruke"
+                    }
+                }
+            }
+        },
+        "/users": {
+            "get": {
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Lista svih korisnika osim trenutno ulogovanog (za biranje članova grupe)",
+                "operationId": "7e2f5799553ec93c9c43e2a58490d447",
+                "responses": {
+                    "200": {
+                        "description": "Lista korisnika"
+                    }
+                }
+            }
+        }
+    },
+    "tags": [
+        {
+            "name": "Groups",
+            "description": "Groups"
+        },
+        {
+            "name": "Messages",
+            "description": "Messages"
+        },
+        {
+            "name": "Users",
+            "description": "Users"
+        }
+    ]
+}

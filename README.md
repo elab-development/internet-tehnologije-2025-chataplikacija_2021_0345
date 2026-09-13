@@ -1,3 +1,41 @@
+# ChatApp
+
+Laravel + React (Inertia) chat aplikacija sa privicima, grupama i real-time porukama (Laravel Reverb).
+
+## Pokretanje preko Dockera
+
+Potreban je samo Docker i Docker Compose (Docker Desktop na Windows-u/Mac-u već ih uključuje).
+
+```bash
+docker compose up --build
+```
+
+Ovo podiže tri kontejnera:
+
+- **app** — Laravel aplikacija, dostupna na [http://localhost:8000](http://localhost:8000)
+- **reverb** — WebSocket server za real-time poruke, na portu 8080
+- **mysql** — baza podataka
+
+Pri prvom pokretanju se automatski rade migracije, `storage:link` i generisanje Swagger dokumentacije. Test podaci (korisnici, poruke, grupe) se ubacuju ručno, po potrebi:
+
+```bash
+docker compose exec app php artisan db:seed
+```
+
+Podaci u bazi i upload-ovani prilozi ostaju sačuvani između restarta (Docker volumeni) — brišu se samo sa `docker compose down -v`.
+
+## API dokumentacija (Swagger / OpenAPI)
+
+Nakon pokretanja, interaktivna dokumentacija API-ja je dostupna na:
+
+[http://localhost:8000/api/documentation](http://localhost:8000/api/documentation)
+
+Pokriva sve JSON API endpoint-e aplikacije: slanje/brisanje poruka i prilozi (`/message`), upravljanje grupama (`/group`) i listu korisnika (`/users`). Sirovi OpenAPI spec fajl (generisan iz anotacija u kodu, `app/Http/Controllers/*.php`) se nalazi na `storage/api-docs/api-docs.json` i regeneriše se automatski pri svakom pokretanju.
+
+Napomena: ove rute koriste sesijsko logovanje (kao i ceo sajt), ne API token, pa "Try it out" dugme u Swagger UI-ju radi za GET rute samo ako si već ulogovana u istom browseru; za POST/PUT/DELETE rute dokumentacija je i dalje potpuna, ali live-test iz same Swagger stranice blokira Laravel-ova CSRF zaštita.
+
+---
+
 <p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
 
 <p align="center">
