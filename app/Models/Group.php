@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Models;
+use App\Http\Resources\UserResource;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -51,7 +52,7 @@ class Group extends Model
             'is_group' => true,
             'is_user' => false,
             'owner_id' => $this->owner_id,
-            'users' => $this->users,
+            'users' => $this->users->map(fn ($user) => new UserResource($user))->values(),
             'user_ids' => $this->users->pluck('id'),
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,

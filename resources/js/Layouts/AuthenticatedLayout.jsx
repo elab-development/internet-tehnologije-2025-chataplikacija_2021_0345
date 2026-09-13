@@ -81,6 +81,12 @@ export default function AuthenticatedLayout({ header, children }) {
                             }`,
                     });
 
+                })
+                .listen("MessageDeleted", (e) => {
+                    emit("message.deleted", { id: e.id });
+                })
+                .listen("GroupDeleted", (e) => {
+                    emit("group.deleted", { id: e.id });
                 });
         });
 

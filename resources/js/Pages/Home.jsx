@@ -8,9 +8,12 @@ import MessageItem from "@/Components/App/MessageItem";
 import MessageInput from "@/Components/App/MessageInput";
 import AttachmentPreviewModal from "@/Components/App/AttachmentPreviewModal";
 import { useEventBus } from "@/EventBus";
+import { useToast } from "@/ToastContext";
+import { router } from "@inertiajs/react";
 
 
 function Home({ messages = null, selectedConversation = null }) {
+    const toast = useToast();
     const [localMessages, setLocalMessages] = useState([]);
     const [noMoreMessages, setNoMoreMessages] = useState(false);
     const [scrollFromBottom, setScrollFromBottom] = useState(0);
@@ -44,6 +47,22 @@ function Home({ messages = null, selectedConversation = null }) {
                 ...prevMessages,
                 message,
             ]);
+        }
+    };
+
+    const messageDeleted = ({ id }) => {
+        setLocalMessages((prevMessages) =>
+            prevMessages.filter((message) => message.id !== id)
+        );
+    };
+
+    const groupDeleted = ({ id }) => {
+        if (
+            selectedConversation?.is_group &&
+            Number(selectedConversation.id) === Number(id)
+        ) {
+            toast.info("This group was deleted");
+            router.visit(route("dashboard"));
         }
     };
 
@@ -104,12 +123,16 @@ function Home({ messages = null, selectedConversation = null }) {
 
         //event listener
         const offCreated = on("message.created", messageCreated);
+        const offDeleted = on("message.deleted", messageDeleted);
+        const offGroupDeleted = on("group.deleted", groupDeleted);
 
         setScrollFromBottom(0); //proveravamo za null pa ne sme null da bude ovde
         setNoMoreMessages(false);
 
         return () => {
             offCreated();
+            offDeleted();
+            offGroupDeleted();
         };
 
     }, [selectedConversation]);
