@@ -23,4 +23,17 @@ class Conversation extends Model
     {
         return $this->belongsTo(Message::class, 'last_message_id');
     }
+
+    public static function getConversationsForSidebar(User $user)
+    {
+        $users = User::getUserExceptUser($user);
+        $groups = Group::getGroupsForUser($user);
+
+        //merge em
+        return $users->map(function (User $user)  {
+            return $user->toConversationArray();
+        })->concat($groups->map(function (Group $group) {
+            return $group->toConversationArray();
+        }));
+    }
 }

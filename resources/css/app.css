@@ -1,3 +1,25 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+
+#app{
+    height: 100vh;
+}
+
+.avatar.online::before {
+    background-color: #22c55e !important;
+}
+
+.avatar.offline::before {
+    background-color: #6b7280 !important;
+}
+
+.conversation-item .avatar.online:before,
+.conversation-item .avatar.offline:before {
+    width: 8px;
+    height: 8px;
+    top: 1%;
+    right: 1%;
+    outline-width: 1px;
+}
