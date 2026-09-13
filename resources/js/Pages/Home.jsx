@@ -6,6 +6,7 @@ import { ChatBubbleLeftRightIcon } from '@heroicons/react/24/solid';
 import ConversationHeader from "@/Components/App/ConversationHeader";
 import MessageItem from "@/Components/App/MessageItem";
 import MessageInput from "@/Components/App/MessageInput";
+import AttachmentPreviewModal from "@/Components/App/AttachmentPreviewModal";
 import { useEventBus } from "@/EventBus";
 
 
@@ -14,6 +15,8 @@ function Home({ messages = null, selectedConversation = null }) {
     const [noMoreMessages, setNoMoreMessages] = useState(false);
     const [scrollFromBottom, setScrollFromBottom] = useState(0);
     const loadMoreIntersect = useRef(null);
+    const [showAttachmentPreview, setShowAttachmentPreview] = useState(false);
+    const [previewAttachment, setPreviewAttachment] = useState({});
     const messagesCtrRef = useRef(null);
     const { on } = useEventBus();
 
@@ -80,7 +83,14 @@ function Home({ messages = null, selectedConversation = null }) {
             });
     }, [localMessages,noMoreMessages]);
 
+    const onAttachmentClick = (attachments, ind) => {
+        setPreviewAttachment({
+            attachments,
+            ind,
+        });
 
+        setShowAttachmentPreview(true);
+    };
 
 
     //SET SCROLLER kad odemo u novi convo
@@ -184,15 +194,24 @@ function Home({ messages = null, selectedConversation = null }) {
                                     <MessageItem
                                         key={message.id}
                                         message={message}
+                                        attachmentClick={onAttachmentClick}
                                     />
                                 ))}
                             </div>
                         )}
                     </div>
                     <MessageInput conversation={selectedConversation} />
-                
+                 
                 </>
                 
+            )}
+            {previewAttachment.attachments && (
+                <AttachmentPreviewModal
+                    attachments={previewAttachment.attachments}
+                    index={previewAttachment.ind}
+                    show={showAttachmentPreview}
+                    onClose={() => setShowAttachmentPreview(false)}
+                />
             )}
         </>
     );
