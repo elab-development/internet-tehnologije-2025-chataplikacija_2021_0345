@@ -60,5 +60,14 @@ class Group extends Model
         ];
     }
 
+    public static function updateGroupWithMessage($groupId, $message)
+    {
+       
+        return self::updateOrCreate(
+            ['id' => $groupId], // search conditions
+            ['last_message_id' => $message->id] // values to update
+        );
+    }
+
 
 }
