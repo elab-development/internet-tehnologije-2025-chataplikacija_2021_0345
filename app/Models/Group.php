@@ -12,7 +12,18 @@ class Group extends Model
 
     public function users()
     {
-        return $this->belongsToMany(User::class, 'group_users');
+        return $this->belongsToMany(User::class, 'group_users')->withPivot('is_admin');
+    }
+
+    public function isOwnerOrGroupAdmin(User $user): bool
+    {
+        if ($this->owner_id === $user->id) {
+            return true;
+        }
+
+        $membership = $this->users->firstWhere('id', $user->id);
+
+        return (bool) ($membership?->pivot->is_admin ?? false);
     }
 
 
@@ -52,7 +63,10 @@ class Group extends Model
             'is_group' => true,
             'is_user' => false,
             'owner_id' => $this->owner_id,
-            'users' => $this->users->map(fn ($user) => new UserResource($user))->values(),
+            'users' => $this->users->map(fn ($user) => array_merge(
+                (new UserResource($user))->resolve(),
+                ['group_is_admin' => (bool) $user->pivot->is_admin]
+            ))->values(),
             'user_ids' => $this->users->pluck('id'),
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,

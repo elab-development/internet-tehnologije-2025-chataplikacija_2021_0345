@@ -9,11 +9,12 @@ import MessageInput from "@/Components/App/MessageInput";
 import AttachmentPreviewModal from "@/Components/App/AttachmentPreviewModal";
 import { useEventBus } from "@/EventBus";
 import { useToast } from "@/ToastContext";
-import { router } from "@inertiajs/react";
+import { router, usePage } from "@inertiajs/react";
 
 
 function Home({ messages = null, selectedConversation = null }) {
     const toast = useToast();
+    const currentUser = usePage().props.auth.user;
     const [localMessages, setLocalMessages] = useState([]);
     const [noMoreMessages, setNoMoreMessages] = useState(false);
     const [scrollFromBottom, setScrollFromBottom] = useState(0);
@@ -62,6 +63,17 @@ function Home({ messages = null, selectedConversation = null }) {
             Number(selectedConversation.id) === Number(id)
         ) {
             toast.info("This group was deleted");
+            router.visit(route("dashboard"));
+        }
+    };
+
+    const groupMemberRemoved = ({ groupId, userId }) => {
+        if (
+            selectedConversation?.is_group &&
+            Number(selectedConversation.id) === Number(groupId) &&
+            Number(userId) === Number(currentUser.id)
+        ) {
+            toast.info("You were removed from this group");
             router.visit(route("dashboard"));
         }
     };
@@ -125,6 +137,7 @@ function Home({ messages = null, selectedConversation = null }) {
         const offCreated = on("message.created", messageCreated);
         const offDeleted = on("message.deleted", messageDeleted);
         const offGroupDeleted = on("group.deleted", groupDeleted);
+        const offMemberRemoved = on("group.member.removed", groupMemberRemoved);
 
         setScrollFromBottom(0); //proveravamo za null pa ne sme null da bude ovde
         setNoMoreMessages(false);
@@ -133,6 +146,7 @@ function Home({ messages = null, selectedConversation = null }) {
             offCreated();
             offDeleted();
             offGroupDeleted();
+            offMemberRemoved();
         };
 
     }, [selectedConversation]);

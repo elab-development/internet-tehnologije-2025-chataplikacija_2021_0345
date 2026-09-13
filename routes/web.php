@@ -20,8 +20,12 @@ Route ::middleware(['auth', 'verified'])->group(function () {
     Route::post('/group', [GroupController::class, 'store'])->name('group.store');
     Route::put('/group/{group}', [GroupController::class, 'update'])->name('group.update');
     Route::delete('/group/{group}', [GroupController::class, 'destroy'])->name('group.destroy');
+    Route::put('/group/{group}/members/{user}', [GroupController::class, 'updateMember'])->name('group.members.update');
+    Route::delete('/group/{group}/members/{user}', [GroupController::class, 'removeMember'])->name('group.members.destroy');
 
     Route::get('/users', [UserController::class, 'index'])->name('user.index');
+    Route::post('/user/{user}/block-unblock', [UserController::class, 'blockUnblock'])->name('user.blockUnblock');
+    Route::post('/user/{user}/change-role', [UserController::class, 'changeRole'])->name('user.changeRole');
 });
 
 

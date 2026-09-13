@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\UserRole;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -12,7 +13,7 @@ use Illuminate\Notifications\Notifiable;
 
 use Illuminate\Support\Facades\Auth;
 
-#[Fillable(['avatar', 'name', 'email', 'email_verified', 'is_admin', 'password'])]
+#[Fillable(['avatar', 'name', 'email', 'email_verified', 'role', 'password', 'blocked_at'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
@@ -29,7 +30,18 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'role' => UserRole::class,
         ];
+    }
+
+    public function isAdmin(): bool
+    {
+        return $this->role === UserRole::Admin;
+    }
+
+    public function canModerate(): bool
+    {
+        return in_array($this->role, [UserRole::Admin, UserRole::Moderator], true);
     }
 
     public function groups()
@@ -48,7 +60,7 @@ class User extends Authenticatable
         ])
             ->where('users.id', '!=', $userId)
 
-            ->when(!$user->is_admin, function ($query) {
+            ->when(!$user->canModerate(), function ($query) {
                 $query->whereNull('users.blocked_at');
             })
 
@@ -81,7 +93,7 @@ class User extends Authenticatable
             'name' => $this->name,
             'is_group' => false,
             'is_user' => true,
-            'is_admin' => (bool) $this->is_admin,
+            'role' => $this->role->value,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
             'blocked_at' => $this->blocked_at,

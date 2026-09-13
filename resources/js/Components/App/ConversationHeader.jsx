@@ -6,6 +6,9 @@ import {
     UserGroupIcon,
     PencilSquareIcon,
     TrashIcon,
+    ShieldCheckIcon,
+    ShieldExclamationIcon,
+    XCircleIcon,
 } from "@heroicons/react/24/solid";
 import UserAvatar from "./UserAvatar";
 import GroupAvatar from "./GroupAvatar";
@@ -23,6 +26,47 @@ const ConversationHeader = ({ selectedConversation }) => {
     const isOwner =
         selectedConversation?.is_group &&
         selectedConversation.owner_id === currentUser.id;
+
+    const isGroupAdmin =
+        selectedConversation?.is_group &&
+        !!selectedConversation.users.find((u) => u.id === currentUser.id)
+            ?.group_is_admin;
+
+    const canManageMembers = isOwner || isGroupAdmin;
+
+    const onToggleGroupAdmin = (member) => {
+        axios
+            .put(route("group.members.update", [selectedConversation.id, member.id]), {
+                is_admin: !member.group_is_admin,
+            })
+            .then(() => {
+                toast.success(
+                    member.group_is_admin
+                        ? `${member.name} is no longer a group admin`
+                        : `${member.name} is now a group admin`
+                );
+                router.reload({ preserveScroll: true });
+            })
+            .catch((err) => {
+                toast.error(err?.response?.data?.message || "Failed to update member");
+            });
+    };
+
+    const onRemoveMember = (member) => {
+        if (!confirm(`Remove ${member.name} from the group?`)) {
+            return;
+        }
+
+        axios
+            .delete(route("group.members.destroy", [selectedConversation.id, member.id]))
+            .then(() => {
+                toast.success(`${member.name} was removed from the group`);
+                router.reload({ preserveScroll: true });
+            })
+            .catch((err) => {
+                toast.error(err?.response?.data?.message || "Failed to remove member");
+            });
+    };
 
     const onDeleteGroupClick = () => {
         if (!confirm("Are you sure you want to delete this group?")) {
@@ -126,22 +170,64 @@ const ConversationHeader = ({ selectedConversation }) => {
                         </h2>
 
                         <div className="mt-4 max-h-80 overflow-y-auto divide-y divide-gray-100 dark:divide-gray-700">
-                            {selectedConversation.users.map((user) => (
-                                <div
-                                    key={user.id}
-                                    className="flex items-center gap-2 py-2"
-                                >
-                                    <UserAvatar user={user} />
-                                    <span className="text-sm text-gray-800 dark:text-gray-200">
-                                        {user.name}
-                                    </span>
-                                    {user.id === selectedConversation.owner_id && (
-                                        <span className="text-xs text-gray-500">
-                                            (owner)
+                            {selectedConversation.users.map((user) => {
+                                const isMemberOwner =
+                                    user.id === selectedConversation.owner_id;
+
+                                return (
+                                    <div
+                                        key={user.id}
+                                        className="flex items-center gap-2 py-2"
+                                    >
+                                        <UserAvatar user={user} />
+                                        <span className="text-sm text-gray-800 dark:text-gray-200">
+                                            {user.name}
                                         </span>
-                                    )}
-                                </div>
-                            ))}
+                                        {isMemberOwner && (
+                                            <span className="text-xs text-gray-500">
+                                                (owner)
+                                            </span>
+                                        )}
+                                        {!isMemberOwner && user.group_is_admin && (
+                                            <span className="text-xs text-gray-500">
+                                                (group admin)
+                                            </span>
+                                        )}
+
+                                        <div className="flex-1" />
+
+                                        {isOwner && !isMemberOwner && (
+                                            <button
+                                                onClick={() => onToggleGroupAdmin(user)}
+                                                title={
+                                                    user.group_is_admin
+                                                        ? "Remove group admin"
+                                                        : "Make group admin"
+                                                }
+                                                className="p-1 text-gray-400 hover:text-gray-200"
+                                            >
+                                                {user.group_is_admin ? (
+                                                    <ShieldExclamationIcon className="w-4 h-4" />
+                                                ) : (
+                                                    <ShieldCheckIcon className="w-4 h-4" />
+                                                )}
+                                            </button>
+                                        )}
+
+                                        {canManageMembers &&
+                                            !isMemberOwner &&
+                                            (isOwner || !user.group_is_admin) && (
+                                                <button
+                                                    onClick={() => onRemoveMember(user)}
+                                                    title="Remove from group"
+                                                    className="p-1 text-gray-400 hover:text-red-400"
+                                                >
+                                                    <XCircleIcon className="w-4 h-4" />
+                                                </button>
+                                            )}
+                                    </div>
+                                );
+                            })}
                         </div>
                     </div>
                 </Modal>
