@@ -6,10 +6,44 @@ import { ChatBubbleLeftRightIcon } from '@heroicons/react/24/solid';
 import ConversationHeader from "@/Components/App/ConversationHeader";
 import MessageItem from "@/Components/App/MessageItem";
 import MessageInput from "@/Components/App/MessageInput";
+import { useEventBus } from "@/EventBus";
+
 
 function Home({ messages = null, selectedConversation = null }) {
     const [localMessages, setLocalMessages] = useState([]);
     const messagesCtrRef = useRef(null);
+    const { on } = useEventBus();
+
+
+    //cases for new message ceated
+    const messageCreated = (message) => {
+        if (
+            selectedConversation &&
+            selectedConversation.is_group &&
+            selectedConversation.id === message.group_id
+        ) {
+            setLocalMessages((prevMessages) => [
+                ...prevMessages,
+                message
+            ]);
+
+            return;
+        }
+
+        if (
+            selectedConversation &&
+            selectedConversation.is_user &&
+            (
+                selectedConversation.id === message.sender_id ||
+                selectedConversation.id === message.receiver_id
+            )
+        ) {
+            setLocalMessages((prevMessages) => [
+                ...prevMessages,
+                message
+            ]);
+        }
+    };
 
     //SET SCROLLER kad odemo u novi convo
     useEffect(() => {
@@ -19,6 +53,14 @@ function Home({ messages = null, selectedConversation = null }) {
                     messagesCtrRef.current.scrollHeight;
             }
         }, 10);
+
+        //event listener
+        const offCreated = on("message.created", messageCreated);
+
+        return () => {
+            offCreated();
+        };
+
     }, [selectedConversation]);
 
     useEffect(() => {
