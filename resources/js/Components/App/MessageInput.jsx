@@ -14,10 +14,11 @@ import AttachmentPreview from "./AttachmentPreview";
 import EmojiPicker from "emoji-picker-react";
 import { Popover } from "@headlessui/react";
 import { isImage } from "@/helpers";
+import { useToast } from "@/ToastContext";
 
 const MessageInput = ({ conversation = null }) => {
+    const toast = useToast();
     const [newMessage, setNewMessage] = useState("");
-    const [inputErrorMessage, setInputErrorMessage] = useState("");
     const [messageSending, setMessageSending] = useState(false);
 
     const [chosenFiles, setChosenFiles] = useState([]);
@@ -44,11 +45,7 @@ const MessageInput = ({ conversation = null }) => {
         }
 
         if (newMessage.trim() === "" && chosenFiles.length === 0) {
-            setInputErrorMessage("Please provide a message or upload attachments.");
-
-            setTimeout(() => {
-                setInputErrorMessage("");
-            }, 3000);
+            toast.error("Please provide a message or upload attachments.");
 
             return;
         }
@@ -94,9 +91,7 @@ const MessageInput = ({ conversation = null }) => {
 
                 const message = error?.response?.data?.message;
 
-                setInputErrorMessage(
-                    message || "An error occurred while sending message"
-                );
+                toast.error(message || "An error occurred while sending message");
             });
 
     };
@@ -171,9 +166,6 @@ const MessageInput = ({ conversation = null }) => {
                         value={uploadProgress}
                         max="100"
                     ></progress>
-                )}
-                {inputErrorMessage && (
-                    <p className="text-xs text-red-400">{inputErrorMessage}</p>
                 )}
 
                 <div className="flex flex-wrap gap-1 mt-2">

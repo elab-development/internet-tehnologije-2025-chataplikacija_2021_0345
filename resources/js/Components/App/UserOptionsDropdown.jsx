@@ -9,43 +9,42 @@ import {
     ShieldCheckIcon,
     UserIcon,
 } from "@heroicons/react/24/solid";
- 
+import { useToast } from "@/ToastContext";
+
 
 export default function UserOptionsDropdown({ conversation }) {
-    //FUNCTIONS SPEC
-    const changeUserRole = () => {
-        console.log("Change user role");
+    const toast = useToast();
 
+    const changeUserRole = () => {
         if (!conversation.is_user) {
             return;
         }
 
-        // Send axios post request to change user role and show notification on success
         axios
             .post(route("user.changeRole", conversation.id))
             .then((res) => {
-                console.log(res.data);
+                toast.success(res.data?.message || "Role updated successfully");
             })
             .catch((err) => {
-                console.error(err);
+                toast.error(err?.response?.data?.message || "Something went wrong");
             });
     };
 
     const onBlockUser = () => {
-        console.log("Block user");
-
         if (!conversation.is_user) {
             return;
         }
 
-        // Send axios post request to block user and show notification on success
         axios
             .post(route("user.blockUnblock", conversation.id))
             .then((res) => {
-                console.log(res.data);
+                toast.success(
+                    res.data?.message ||
+                        (conversation.blocked_at ? "User unblocked" : "User blocked")
+                );
             })
             .catch((err) => {
-                console.error(err);
+                toast.error(err?.response?.data?.message || "Something went wrong");
             });
     };
 

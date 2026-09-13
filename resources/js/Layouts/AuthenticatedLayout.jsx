@@ -3,7 +3,8 @@ import Dropdown from '@/Components/Dropdown';
 import NavLink from '@/Components/NavLink';
 import ResponsiveNavLink from '@/Components/ResponsiveNavLink';
 import { useEventBus } from '@/EventBus';
-import { Link, usePage } from '@inertiajs/react';
+import { useToast } from '@/ToastContext';
+import { Link, router, usePage } from '@inertiajs/react';
 import { useState , useEffect} from 'react';
 
 
@@ -15,7 +16,26 @@ export default function AuthenticatedLayout({ header, children }) {
     const [showingNavigationDropdown, setShowingNavigationDropdown] =
         useState(false);
     
-        const {emit} = useEventBus();
+        const {emit, on} = useEventBus();
+        const toast = useToast();
+
+    useEffect(() => {
+        const offNotification = on("newMessageNotification", (data) => {
+            toast.info(`${data.user.name}: ${data.message}`, {
+                onClick: () =>
+                    router.visit(
+                        route(
+                            data.group_id ? "chat.group" : "chat.user",
+                            data.group_id ?? data.user.id
+                        )
+                    ),
+            });
+        });
+
+        return () => {
+            offNotification();
+        };
+    }, [on]);
 
     //rade poruke, treba socket umesto reload da ne bi morali da refreshujemo
     useEffect(() => {
